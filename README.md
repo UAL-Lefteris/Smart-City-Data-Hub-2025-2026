@@ -84,13 +84,13 @@ cd Smart-City-Data-Hub-2025-2026
 
 2. Create a virtual environment:
 ```bash
-python -m venv venv
+python -m .venv .venv
 
 # Windows
-venv\Scripts\activate
+.venv\Scripts\activate
 
 # macOS
-source venv/bin/activate
+source .venv/bin/activate
 ```
 
 3. Install dependencies:
