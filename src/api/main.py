@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from src.api.database.connection import engine, Base
-from src.api.routes import properties
+from src.database.database import database
+from src.api.routes import properties, carbon
 from src.api.exceptions import (
     PropertyNotFoundException,
     property_not_found_handler,
@@ -14,47 +14,44 @@ from fastapi.exceptions import RequestValidationError
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Lifespan context manager for startup and shutdown events.
-
-    Startup:
-    - Creates all database tables if they don't exist
-
-    Shutdown:
-    - Closes database connections
-    """
-    Base.metadata.create_all(bind=engine)
+    database.create_postgres_tables()
 
     yield
 
-    engine.dispose()
+    database.close()
 
 
 app = FastAPI(
     title="Urban Data Hub API",
     description="""
-    ## London Property Data API
+    ## Smart City Data Hub API
 
-    This API provides access to London property data for the BSc Data Science course.
+    This API provides access to London property and carbon intensity data.
 
     ### Features:
-    * **CRUD Operations**: Create, Read, Update, and Delete property records
-    * **Search & Filter**: Search properties by borough, price range, and bedrooms
+    * **Property Data**: CRUD operations for London property listings (PostgreSQL)
+    * **Carbon Intensity Data**: Access to UK carbon intensity data (MongoDB)
+    * **Search & Filter**: Advanced search and filtering capabilities
     * **Pagination**: Efficient data retrieval with limit and offset parameters
     * **Data Validation**: Automatic validation using Pydantic models
 
     ### Resources:
-    * **Properties**: Manage London property listings
+    * **Properties**: Manage London property listings from web scraping
+    * **Carbon Intensity**: Access carbon intensity data by region and postcode
+
+    ### Databases:
+    - **PostgreSQL**: Property data storage
+    - **MongoDB**: Carbon intensity data storage
 
     ### Learning Objectives:
     This API demonstrates:
     - RESTful API design principles
+    - Multi-database integration (PostgreSQL + MongoDB)
     - HTTP methods and status codes
     - Request/Response handling
-    - Database integration with SQLAlchemy
     - Data validation and serialization
     """,
-    version="1.0.0",
+    version="2.0.0",
     contact={
         "name": "Data Science Course",
         "email": "datasci@example.com",
@@ -82,32 +79,25 @@ app.include_router(
     tags=["Properties"],
 )
 
+app.include_router(
+    carbon.router,
+    prefix="/carbon",
+    tags=["Carbon Intensity"],
+)
+
 
 @app.get("/", tags=["Root"])
 async def root():
-    """
-    Root endpoint - API health check and welcome message.
-
-    Returns:
-        dict: Welcome message and API status
-    """
     return {
         "message": "Welcome to Urban Data Hub API",
         "status": "operational",
         "version": "1.0.0",
         "docs": "/docs",
-        "redoc": "/redoc",
     }
 
 
 @app.get("/health", tags=["Health"])
 async def health_check():
-    """
-    Health check endpoint for monitoring.
-
-    Returns:
-        dict: API health status
-    """
     return {
         "status": "healthy",
         "database": "connected",
@@ -119,7 +109,7 @@ if __name__ == "__main__":
 
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
+        host="127.0.0.1",
         port=8000,
         reload=True,
     )

@@ -1,10 +1,3 @@
-"""
-Property scraper for Zoopla listings
-
-This module contains the PropertyScraper class which handles web scraping
-of property listings from Zoopla using Playwright.
-"""
-
 import time
 import hashlib
 from datetime import datetime
@@ -16,34 +9,15 @@ from config import (
     MAX_PAGES_PER_AREA, MAX_LISTINGS_PER_AREA
 )
 from typing import List
-from models import ScrapedItem
+from models import ScrapedProperty
 
 
 class PropertyScraper:
-    """
-    Web scraper for property listings
-
-    This class handles the scraping of property listings from Zoopla,
-    including pagination, cookie acceptance, and detailed property extraction.
-    """
-
     def __init__(self, headless: bool = HEADLESS):
-        """
-        Initialize the PropertyScraper
-
-        Args:
-            headless: Whether to run browser in headless mode (default: from config)
-        """
         self.headless = headless
         self.browser = None
 
     def _create_page(self):
-        """
-        Create a new browser page with anti-detection settings
-
-        Returns:
-            Page: Playwright page object
-        """
         page = self.browser.new_page(viewport=VIEWPORT)
         page.set_extra_http_headers({'User-Agent': USER_AGENT})
 
@@ -56,12 +30,6 @@ class PropertyScraper:
         return page
 
     def _accept_cookies(self, page):
-        """
-        Accept cookie consent if present
-
-        Args:
-            page: Playwright page object
-        """
         try:
             page.wait_for_selector(SELECTORS['cookie_accept'], timeout=3000)
             page.click(SELECTORS['cookie_accept'])
@@ -70,13 +38,6 @@ class PropertyScraper:
             pass
 
     def _search_location(self, page, location: str):
-        """
-        Navigate to base URL and search for a location
-
-        Args:
-            page: Playwright page object
-            location: Location string to search for
-        """
         page.goto(BASE_URL, wait_until="domcontentloaded")
 
         self._accept_cookies(page)
@@ -88,15 +49,6 @@ class PropertyScraper:
         time.sleep(BASE_WAIT_DURATION * 2)
 
     def _collect_listing_urls(self, page) -> List[str]:
-        """
-        Collect all listing URLs from paginated search results
-
-        Args:
-            page: Playwright page object
-
-        Returns:
-            List of listing URLs
-        """
         all_urls = []
         current_page = 1
 
@@ -163,20 +115,8 @@ class PropertyScraper:
 
         return all_urls
 
-    def _scrape_detail_page(self, page, soup: BeautifulSoup, url: str, location: str) -> ScrapedItem:
-        """
-        Extract property details from a detail page
-
-        Args:
-            page: Playwright page object
-            soup: BeautifulSoup object of the page HTML
-            url: URL of the property
-            location: Search location
-
-        Returns:
-            ScrapedItem with extracted data
-        """
-        scraped_item = ScrapedItem()
+    def _scrape_detail_page(self, page, soup: BeautifulSoup, url: str, location: str) -> ScrapedProperty:
+        scraped_item = ScrapedProperty()
         scraped_item.url = url
         scraped_item.search_location = location
         scraped_item.date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -239,18 +179,7 @@ class PropertyScraper:
 
         return scraped_item
 
-    def _scrape_listings(self, page, listing_urls: List[str], location: str) -> List[ScrapedItem]:
-        """
-        Scrape details from multiple listing URLs
-
-        Args:
-            page: Playwright page object
-            listing_urls: List of URLs to scrape
-            location: Search location
-
-        Returns:
-            List of ScrapedItem objects
-        """
+    def _scrape_listings(self, page, listing_urls: List[str], location: str) -> List[ScrapedProperty]:
         scraped_items = []
 
         for index, listing_url in enumerate(listing_urls, 1):
@@ -272,16 +201,7 @@ class PropertyScraper:
 
         return scraped_items
 
-    def scrape_area(self, location: str) -> List[ScrapedItem]:
-        """
-        Scrape all listings for a single area
-
-        Args:
-            location: Location to search for
-
-        Returns:
-            List of ScrapedItem objects
-        """
+    def scrape_area(self, location: str) -> List[ScrapedProperty]:
         print(f"\n{'='*60}")
         print(f"Scraping area: {location}")
         print(f"{'='*60}\n")
@@ -313,16 +233,7 @@ class PropertyScraper:
 
             return scraped_items
 
-    def scrape_all_areas(self, locations: List[str]) -> List[ScrapedItem]:
-        """
-        Scrape all listings for multiple areas
-
-        Args:
-            locations: List of locations to search for
-
-        Returns:
-            List of all ScrapedItem objects
-        """
+    def scrape_all_areas(self, locations: List[str]) -> List[ScrapedProperty]:
         all_items = []
 
         for index, location in enumerate(locations, 1):

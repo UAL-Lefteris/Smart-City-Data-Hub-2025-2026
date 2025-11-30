@@ -1,15 +1,10 @@
-"""
-SQLAlchemy database models for property listings
-"""
-
 from sqlalchemy import Column, String, Integer, Text, DateTime, ARRAY
 from sqlalchemy.sql import func
-from database import Base
+from sqlalchemy.ext.declarative import declarative_base
 
+Base = declarative_base()
 
 class Property(Base):
-    """SQLAlchemy model for property listings"""
-
     __tablename__ = "properties"
 
     # Primary key

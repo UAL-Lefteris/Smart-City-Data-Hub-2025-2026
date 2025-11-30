@@ -1,13 +1,9 @@
-"""
-Data models for the web scraper
-"""
-
 from dataclasses import dataclass, field
 from typing import List
 
+
 @dataclass
-class ScrapedItem:
-    """Represents a scraped property listing"""
+class ScrapedProperty:
     id: str = ""
     url: str = ""
     state: str = "active"
@@ -26,14 +22,12 @@ class ScrapedItem:
     tags: List[str] = field(default_factory=list)
 
     def __str__(self):
-        """String representation of the item"""
         return (
             f"ScrapedItem(slur='{self.slur}', price=£{self.price:,}, "
             f"beds={self.beds}, location='{self.search_location}')"
         )
 
     def to_dict(self):
-        """Convert to dictionary for JSON serialization"""
         return {
             'id': self.id,
             'url': self.url,

@@ -1,9 +1,3 @@
-"""
-Configuration settings for the web scraper
-"""
-
-import os
-
 # Timing settings
 BASE_WAIT_DURATION = 1
 
@@ -104,19 +98,3 @@ LONDON_AREAS = [
     "Oval, London",
     "Camberwell, London",
 ]
-
-DATABASE_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'port': os.getenv('DB_PORT', '5432'),
-    'user': os.getenv('DB_USER', 'postgres'),
-    'password': os.getenv('DB_PASSWORD', 'postgres'),
-    'database': os.getenv('DB_NAME', 'smart-city-hub'),
-}
-
-DATABASE_URL = (
-    f"postgresql://{DATABASE_CONFIG['user']}:{DATABASE_CONFIG['password']}"
-    f"@{DATABASE_CONFIG['host']}:{DATABASE_CONFIG['port']}"
-    f"/{DATABASE_CONFIG['database']}"
-)
-
-DATABASE_URL = os.getenv('DATABASE_URL', DATABASE_URL)

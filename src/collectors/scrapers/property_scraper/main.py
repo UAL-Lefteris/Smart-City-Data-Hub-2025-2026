@@ -1,49 +1,25 @@
-"""
-Web scraper for property listings
-
-This is the main entry point for the scraper.
-"""
-
 from scraper import PropertyScraper
-from config import LONDON_AREAS, DATABASE_URL
-from database import Database
+from config import LONDON_AREAS
 from repository import PropertyRepository
 import json
 
+from ....database.database import database
 
-def main(save_to_db: bool = True):
-    """
-    Main function to run the scraper
 
-    Args:
-        save_to_db: Whether to save results to database (default: True)
-
-    Returns:
-        List of scraped items
-    """
-
-    # Initialize scraper
-    print("Initializing scraper...")
+def main(create_tables: bool = False, save_to_db: bool = True):
     scraper = PropertyScraper(headless=True)
 
-    # Initialize database if needed
-    db = None
-    if save_to_db:
-        print(f"Connecting to database...")
-        db = Database(DATABASE_URL)
-        db.create_tables()
-        print("Database connection established\n")
+    if save_to_db and create_tables:
+        database.create_tables()
 
-    # Scrape all areas
     items = scraper.scrape_all_areas(LONDON_AREAS)
 
-    # Save to database
-    if save_to_db and db and items:
+    if save_to_db and items:
         print(f"\n{'='*60}")
         print("Saving to database...")
         print(f"{'='*60}\n")
 
-        with db.session_scope() as session:
+        with database.connect() as session:
             repo = PropertyRepository(session)
             result = repo.bulk_upsert(items)
 
@@ -58,9 +34,9 @@ def main(save_to_db: bool = True):
             print(f"  - Total properties in DB: {stats['total_properties']}")
             print(f"  - Average price: £{stats['average_price']:,.0f}")
             print(f"  - Price range: £{stats['min_price']:,} - £{stats['max_price']:,}")
-
-    with open("output.json", "w") as f:
-        json.dump([item.to_dict() for item in items], f)
+    else:
+        with open("output.json", "w") as f:
+            json.dump([item.to_dict() for item in items], f)
 
     return items
 

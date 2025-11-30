@@ -1,382 +1,248 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 
 class PropertyBase(BaseModel):
-    """
-    Base property schema with common fields.
 
-    This schema contains fields that are shared across
-    create, update, and response schemas.
-    """
-
-    address: str = Field(
+    url: str = Field(
         ...,
         min_length=5,
+        max_length=500,
+        description="Property listing URL",
+        examples=["https://example.com/property/12345"],
+    )
+
+    state: str = Field(
+        default="active",
+        max_length=20,
+        description="Property state (active, sold, removed)",
+        examples=["active", "sold"],
+    )
+
+    search_location: Optional[str] = Field(
+        None,
+        max_length=200,
+        description="Search location used to find property",
+        examples=["London", "Westminster"],
+    )
+
+    address: Optional[str] = Field(
+        None,
         max_length=500,
         description="Full street address of the property",
         examples=["123 High Street, London"],
     )
 
-    borough: str = Field(
-        ...,
-        min_length=2,
-        max_length=100,
-        description="London borough name",
-        examples=["Westminster", "Camden", "Hackney"],
-    )
-
-    postcode: Optional[str] = Field(
+    zip_code: Optional[str] = Field(
         None,
-        max_length=10,
-        description="UK postcode",
+        max_length=20,
+        description="UK postcode/zip code",
         examples=["SW1A 1AA"],
     )
 
-    property_type: str = Field(
-        ...,
-        min_length=2,
-        max_length=50,
-        description="Type of property",
-        examples=["Flat", "House", "Terraced", "Semi-Detached", "Detached"],
-    )
-
-    bedrooms: int = Field(
-        ...,
-        ge=0,
-        le=20,
-        description="Number of bedrooms (0-20)",
-        examples=[2],
-    )
-
-    price: float = Field(
-        ...,
-        gt=0,
-        description="Property price in GBP (must be positive)",
-        examples=[450000.00],
-    )
-
-    latitude: Optional[float] = Field(
+    price: Optional[int] = Field(
         None,
-        ge=-90,
-        le=90,
-        description="Geographic latitude (-90 to 90)",
-        examples=[51.5074],
+        description="Property price in GBP",
+        examples=[450000],
     )
 
-    longitude: Optional[float] = Field(
+    slur: Optional[str] = Field(
         None,
-        ge=-180,
-        le=180,
-        description="Geographic longitude (-180 to 180)",
-        examples=[-0.1278],
+        max_length=500,
+        description="Property title/slug",
+        examples=["2-bedroom-flat-in-westminster"],
     )
 
     description: Optional[str] = Field(
         None,
-        max_length=2000,
-        description="Additional property details",
+        description="Property description",
         examples=["Spacious 2-bedroom flat with modern kitchen"],
+    )
+
+    beds: Optional[int] = Field(
+        None,
+        ge=0,
+        description="Number of bedrooms",
+        examples=[2],
+    )
+
+    baths: Optional[int] = Field(
+        None,
+        ge=0,
+        description="Number of bathrooms",
+        examples=[1],
+    )
+
+    receptions: Optional[int] = Field(
+        None,
+        ge=0,
+        description="Number of reception rooms",
+        examples=[1],
+    )
+
+    epc_rating: Optional[str] = Field(
+        None,
+        max_length=5,
+        description="Energy Performance Certificate rating",
+        examples=["C", "B"],
+    )
+
+    image: Optional[str] = Field(
+        None,
+        description="Property image URL",
+    )
+
+    tags: Optional[List[str]] = Field(
+        default=[],
+        description="Property tags/features",
+        examples=[["garden", "parking"]],
     )
 
     @field_validator("price")
     @classmethod
-    def validate_price(cls, v: float) -> float:
-        """
-        Validate that price is positive and reasonable.
-
-        Args:
-            v: Price value to validate
-
-        Returns:
-            float: Validated price
-
-        Raises:
-            ValueError: If price is not positive or too large
-        """
-        if v <= 0:
-            raise ValueError("Price must be greater than 0")
-        if v > 100_000_000:  # £100 million
-            raise ValueError("Price seems unreasonably high")
-        return round(v, 2)  # Round to 2 decimal places
-
-    @field_validator("bedrooms")
-    @classmethod
-    def validate_bedrooms(cls, v: int) -> int:
-        """
-        Validate number of bedrooms.
-
-        Args:
-            v: Number of bedrooms
-
-        Returns:
-            int: Validated bedroom count
-
-        Raises:
-            ValueError: If bedrooms is negative
-        """
-        if v < 0:
-            raise ValueError("Number of bedrooms cannot be negative")
+    def validate_price(cls, v: Optional[int]) -> Optional[int]:
+        """Validate that price is positive and reasonable."""
+        if v is not None:
+            if v <= 0:
+                raise ValueError("Price must be greater than 0")
+            if v > 100_000_000:
+                raise ValueError("Price seems unreasonably high")
         return v
 
-    @field_validator("borough")
+    @field_validator("zip_code")
     @classmethod
-    def validate_borough(cls, v: str) -> str:
-        """
-        Normalize borough name (title case).
-
-        Args:
-            v: Borough name
-
-        Returns:
-            str: Normalized borough name
-        """
-        return v.strip().title()
-
-    @field_validator("postcode")
-    @classmethod
-    def validate_postcode(cls, v: Optional[str]) -> Optional[str]:
-        """
-        Normalize UK postcode to uppercase.
-
-        Args:
-            v: Postcode string
-
-        Returns:
-            str: Normalized postcode
-        """
+    def validate_zip_code(cls, v: Optional[str]) -> Optional[str]:
+        """Normalize UK postcode to uppercase."""
         if v:
             return v.strip().upper()
         return v
 
 
 class PropertyCreate(PropertyBase):
-    """
-    Schema for creating a new property.
-
-    Inherits all fields from PropertyBase.
-    All required fields must be provided.
-
-    Example:
-        {
-            "address": "123 High Street, London",
-            "borough": "Westminster",
-            "property_type": "Flat",
-            "bedrooms": 2,
-            "price": 450000.00,
-            "postcode": "SW1A 1AA",
-            "latitude": 51.5074,
-            "longitude": -0.1278
-        }
-    """
-
     pass
 
 
 class PropertyUpdate(BaseModel):
-    """
-    Schema for updating an existing property.
 
-    All fields are optional - only provide fields you want to update.
-
-    Example:
-        {
-            "price": 475000.00,
-            "description": "Price reduced!"
-        }
-    """
-
-    address: Optional[str] = Field(
-        None,
-        min_length=5,
-        max_length=500,
-        description="Full street address",
-    )
-
-    borough: Optional[str] = Field(
-        None,
-        min_length=2,
-        max_length=100,
-        description="London borough",
-    )
-
-    postcode: Optional[str] = Field(
-        None,
-        max_length=10,
-        description="UK postcode",
-    )
-
-    property_type: Optional[str] = Field(
-        None,
-        min_length=2,
-        max_length=50,
-        description="Type of property",
-    )
-
-    bedrooms: Optional[int] = Field(
-        None,
-        ge=0,
-        le=20,
-        description="Number of bedrooms",
-    )
-
-    price: Optional[float] = Field(
-        None,
-        gt=0,
-        description="Property price in GBP",
-    )
-
-    latitude: Optional[float] = Field(
-        None,
-        ge=-90,
-        le=90,
-        description="Geographic latitude",
-    )
-
-    longitude: Optional[float] = Field(
-        None,
-        ge=-180,
-        le=180,
-        description="Geographic longitude",
-    )
-
-    description: Optional[str] = Field(
-        None,
-        max_length=2000,
-        description="Property description",
-    )
+    url: Optional[str] = Field(None, max_length=500)
+    state: Optional[str] = Field(None, max_length=20)
+    search_location: Optional[str] = Field(None, max_length=200)
+    address: Optional[str] = Field(None, max_length=500)
+    zip_code: Optional[str] = Field(None, max_length=20)
+    price: Optional[int] = Field(None, gt=0)
+    slur: Optional[str] = Field(None, max_length=500)
+    description: Optional[str] = Field(None)
+    beds: Optional[int] = Field(None, ge=0)
+    baths: Optional[int] = Field(None, ge=0)
+    receptions: Optional[int] = Field(None, ge=0)
+    epc_rating: Optional[str] = Field(None, max_length=5)
+    image: Optional[str] = Field(None)
+    tags: Optional[List[str]] = Field(None)
 
     @field_validator("price")
     @classmethod
-    def validate_price(cls, v: Optional[float]) -> Optional[float]:
+    def validate_price(cls, v: Optional[int]) -> Optional[int]:
         """Validate price if provided."""
         if v is not None:
             if v <= 0:
                 raise ValueError("Price must be greater than 0")
             if v > 100_000_000:
                 raise ValueError("Price seems unreasonably high")
-            return round(v, 2)
-        return v
-
-    @field_validator("bedrooms")
-    @classmethod
-    def validate_bedrooms(cls, v: Optional[int]) -> Optional[int]:
-        """Validate bedrooms if provided."""
-        if v is not None and v < 0:
-            raise ValueError("Number of bedrooms cannot be negative")
         return v
 
 
 class PropertyResponse(PropertyBase):
-    """
-    Schema for property responses.
 
-    Includes all property data plus:
-    - id: Database identifier
-    - created_at: When property was created
-    - updated_at: When property was last updated
-
-    This is what clients receive when requesting property data.
-    """
-
-    id: int = Field(
+    id: str = Field(
         ...,
         description="Unique property identifier",
-        examples=[1],
+        examples=["abc123def456"],
     )
 
-    created_at: datetime = Field(
-        ...,
-        description="Timestamp when property was created",
+    scraped_date: Optional[datetime] = Field(
+        None,
+        description="Timestamp when property was scraped",
     )
 
-    updated_at: datetime = Field(
-        ...,
+    updated_date: Optional[datetime] = Field(
+        None,
         description="Timestamp when property was last updated",
     )
 
     class Config:
         """Pydantic configuration."""
 
-        from_attributes = True  # Enable ORM mode for SQLAlchemy models
+        from_attributes = True
         json_schema_extra = {
             "example": {
-                "id": 1,
+                "id": "abc123def456",
+                "url": "https://example.com/property/12345",
+                "state": "active",
                 "address": "123 High Street, London",
-                "borough": "Westminster",
-                "postcode": "SW1A 1AA",
-                "property_type": "Flat",
-                "bedrooms": 2,
-                "price": 450000.00,
-                "latitude": 51.5074,
-                "longitude": -0.1278,
+                "search_location": "Westminster",
+                "zip_code": "SW1A 1AA",
+                "price": 450000,
+                "beds": 2,
+                "baths": 1,
                 "description": "Spacious 2-bedroom flat",
-                "created_at": "2024-01-15T10:30:00Z",
-                "updated_at": "2024-01-15T10:30:00Z",
+                "scraped_date": "2024-01-15T10:30:00Z",
+                "updated_date": "2024-01-15T10:30:00Z",
             }
         }
 
 
 class PropertySearchParams(BaseModel):
-    """
-    Schema for property search query parameters.
 
-    All parameters are optional - combine them to filter results.
-
-    Example:
-        /properties/search?borough=Westminster&min_price=300000&max_price=500000&bedrooms=2
-    """
-
-    borough: Optional[str] = Field(
+    search_location: Optional[str] = Field(
         None,
-        description="Filter by borough name",
-        examples=["Westminster"],
+        description="Filter by search location",
+        examples=["Westminster", "London"],
     )
 
-    min_price: Optional[float] = Field(
+    zip_code: Optional[str] = Field(
+        None,
+        description="Filter by postcode",
+        examples=["SW1A"],
+    )
+
+    min_price: Optional[int] = Field(
         None,
         ge=0,
         description="Minimum price in GBP",
         examples=[300000],
     )
 
-    max_price: Optional[float] = Field(
+    max_price: Optional[int] = Field(
         None,
         ge=0,
         description="Maximum price in GBP",
         examples=[500000],
     )
 
-    bedrooms: Optional[int] = Field(
+    beds: Optional[int] = Field(
         None,
         ge=0,
         description="Exact number of bedrooms",
         examples=[2],
     )
 
-    property_type: Optional[str] = Field(
+    baths: Optional[int] = Field(
         None,
-        description="Filter by property type",
-        examples=["Flat"],
+        ge=0,
+        description="Exact number of bathrooms",
+        examples=[1],
+    )
+
+    state: Optional[str] = Field(
+        None,
+        description="Filter by property state",
+        examples=["active", "sold"],
     )
 
     @field_validator("max_price")
     @classmethod
-    def validate_price_range(cls, v: Optional[float], info) -> Optional[float]:
-        """
-        Validate that max_price >= min_price.
-
-        Args:
-            v: Maximum price
-            info: Validation context with other field values
-
-        Returns:
-            float: Validated max price
-
-        Raises:
-            ValueError: If max_price < min_price
-        """
+    def validate_price_range(cls, v: Optional[int], info) -> Optional[int]:
         min_price = info.data.get("min_price")
         if v is not None and min_price is not None:
             if v < min_price:

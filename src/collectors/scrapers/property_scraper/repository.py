@@ -1,78 +1,33 @@
-"""
-Repository layer for database operations
-"""
-
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_
+from sqlalchemy import func, and_
 
-from db_models import Property
-from models import ScrapedItem
-
-
-class User:
-    name: str
-    date_of_birth: str
-    password: str
+from ....core.models.property import Property
+from models import ScrapedProperty
 
 
 class PropertyRepository:
-    """Repository for property database operations"""
 
     def __init__(self, session: Session):
-        """
-        Initialize repository with a database session
-
-        Args:
-            session: SQLAlchemy session
-        """
         self.session = session
 
-    def create(self, item: ScrapedItem) -> Property:
-        """
-        Create a new property record
-
-        Args:
-            item: ScrapedItem to save
-
-        Returns:
-            Created Property instance
-        """
+    def create(self, item: ScrapedProperty) -> Property:
         property_obj = Property.from_scraped_item(item)
         self.session.add(property_obj)
         self.session.commit()
         self.session.refresh(property_obj)
         return property_obj
 
-    def bulk_create(self, items: List[ScrapedItem]) -> int:
-        """
-        Create multiple property records
-
-        Args:
-            items: List of ScrapedItems to save
-
-        Returns:
-            Number of records created
-        """
+    def bulk_create(self, items: List[ScrapedProperty]) -> int:
         properties = [Property.from_scraped_item(item) for item in items]
         self.session.bulk_save_objects(properties)
         self.session.commit()
         return len(properties)
 
-    def upsert(self, item: ScrapedItem) -> Property:
-        """
-        Update existing property or create new one
-
-        Args:
-            item: ScrapedItem to save/update
-
-        Returns:
-            Property instance
-        """
+    def upsert(self, item: ScrapedProperty) -> Property:
         existing = self.get_by_id(item.id)
 
         if existing:
-            # Update existing record
             existing.state = item.state
             existing.search_location = item.search_location
             existing.address = item.address
@@ -90,19 +45,9 @@ class PropertyRepository:
             self.session.refresh(existing)
             return existing
         else:
-            # Create new record
             return self.create(item)
 
-    def bulk_upsert(self, items: List[ScrapedItem]) -> dict:
-        """
-        Bulk upsert properties
-
-        Args:
-            items: List of ScrapedItems to save/update
-
-        Returns:
-            Dictionary with counts of created and updated records
-        """
+    def bulk_upsert(self, items: List[ScrapedProperty]) -> dict:
         created = 0
         updated = 0
 
@@ -130,42 +75,28 @@ class PropertyRepository:
         return {"created": created, "updated": updated}
 
     def get_by_id(self, property_id: str) -> Optional[Property]:
-        """Get property by ID"""
         return self.session.query(Property).filter(Property.id == property_id).first()
 
     def get_by_url(self, url: str) -> Optional[Property]:
-        """Get property by URL"""
         return self.session.query(Property).filter(Property.url == url).first()
 
     def get_all(self, limit: int = None) -> List[Property]:
-        """
-        Get all properties
-
-        Args:
-            limit: Maximum number of records to return
-
-        Returns:
-            List of Property instances
-        """
         query = self.session.query(Property)
         if limit:
             query = query.limit(limit)
         return query.all()
 
     def get_by_location(self, location: str) -> List[Property]:
-        """Get properties by search location"""
         return self.session.query(Property).filter(
             Property.search_location == location
         ).all()
 
     def get_by_price_range(self, min_price: int, max_price: int) -> List[Property]:
-        """Get properties within a price range"""
         return self.session.query(Property).filter(
             and_(Property.price >= min_price, Property.price <= max_price)
         ).all()
 
     def get_by_beds(self, beds: int) -> List[Property]:
-        """Get properties by number of bedrooms"""
         return self.session.query(Property).filter(Property.beds == beds).all()
 
     def search(
@@ -176,19 +107,6 @@ class PropertyRepository:
         beds: int = None,
         limit: int = None
     ) -> List[Property]:
-        """
-        Search properties with multiple filters
-
-        Args:
-            location: Search location
-            min_price: Minimum price
-            max_price: Maximum price
-            beds: Number of bedrooms
-            limit: Maximum results
-
-        Returns:
-            List of matching properties
-        """
         query = self.session.query(Property)
 
         if location:
@@ -206,12 +124,6 @@ class PropertyRepository:
         return query.all()
 
     def get_statistics(self) -> dict:
-        """
-        Get statistics about stored properties
-
-        Returns:
-            Dictionary with statistics
-        """
         total = self.session.query(func.count(Property.id)).scalar()
         avg_price = self.session.query(func.avg(Property.price)).scalar()
         min_price = self.session.query(func.min(Property.price)).scalar()
@@ -231,15 +143,6 @@ class PropertyRepository:
         }
 
     def delete_by_id(self, property_id: str) -> bool:
-        """
-        Delete property by ID
-
-        Args:
-            property_id: ID of property to delete
-
-        Returns:
-            True if deleted, False if not found
-        """
         property_obj = self.get_by_id(property_id)
         if property_obj:
             self.session.delete(property_obj)
@@ -248,15 +151,6 @@ class PropertyRepository:
         return False
 
     def mark_inactive(self, property_id: str) -> bool:
-        """
-        Mark property as inactive instead of deleting
-
-        Args:
-            property_id: ID of property to mark inactive
-
-        Returns:
-            True if marked, False if not found
-        """
         property_obj = self.get_by_id(property_id)
         if property_obj:
             property_obj.state = "inactive"
