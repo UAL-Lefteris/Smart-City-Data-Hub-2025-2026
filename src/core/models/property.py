@@ -39,20 +39,10 @@ class Property(Base):
     tags = Column(ARRAY(String), default=[])
 
     def __repr__(self):
-        """String representation"""
         return f"<Property(id='{self.id}', slur='{self.slur}', price={self.price})>"
 
     @classmethod
     def from_scraped_item(cls, item):
-        """
-        Create a Property instance from a ScrapedItem
-
-        Args:
-            item: ScrapedItem instance
-
-        Returns:
-            Property instance
-        """
         return cls(
             id=item.id,
             url=item.url,

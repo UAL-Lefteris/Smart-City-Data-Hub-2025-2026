@@ -21,14 +21,12 @@ class Config:
     MONGODB_URL: str = os.getenv('MONGODB_URL', 'mongodb://localhost:27017')
     MONGODB_NAME: str = os.getenv('MONGODB_NAME', 'urban_data_hub')
 
+    # Cache Configuration
+    CACHE_URL: str = os.getenv('CACHE_URL', 'redis://localhost:6379/0')
+    CACHE_TTL: str = 300
+
     @classmethod
     def get_sql_url(cls) -> str:
-        """
-        Get PostgreSQL connection URL.
-
-        Returns:
-            str: PostgreSQL connection string
-        """
         return (
             f"postgresql://{cls.POSTGRES_USER}:{cls.POSTGRES_PASSWORD}"
             f"@{cls.POSTGRES_HOST}:{cls.POSTGRES_PORT}/{cls.POSTGRES_DB}"
@@ -36,10 +34,4 @@ class Config:
 
     @classmethod
     def get_mongodb_url(cls) -> str:
-        """
-        Get MongoDB connection URL.
-
-        Returns:
-            str: MongoDB connection string
-        """
         return cls.MONGODB_URL

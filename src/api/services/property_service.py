@@ -5,7 +5,7 @@ from src.api.repositories.property_repository import PropertyRepository
 from src.api.schemas.property import PropertyCreate, PropertyUpdate
 from src.core.models.property import Property
 from src.api.exceptions import PropertyNotFoundException
-
+from src.api.cache.cache_manager import cached
 
 class PropertyService:
     def __init__(self, db: Session):
@@ -24,7 +24,12 @@ class PropertyService:
         return self.repository.get_all(self.db, skip=skip, limit=limit)
 
     def create_property(self, property_data: PropertyCreate) -> Property:
-        return self.repository.create(self.db, property_data)
+        result = self.repository.create(self.db, property_data)
+
+        from src.api.cache.cache_manager import cache
+        cache.invalidate_pattern("property:*")
+
+        return result
 
     def update_property(
         self,
@@ -47,6 +52,9 @@ class PropertyService:
 
         if not success:
             raise PropertyNotFoundException(property_id)
+
+        from src.api.cache.cache_manager import cache
+        cache.invalidate_pattern("property:*")
 
     def search_properties(
         self,
@@ -73,6 +81,7 @@ class PropertyService:
             limit=limit,
         )
 
+    @cached(key_prefix="property:count", ttl=300)
     def get_property_count(self) -> int:
         return self.repository.get_count(self.db)
 
@@ -97,9 +106,11 @@ class PropertyService:
             state=state,
         )
 
+    @cached(key_prefix="property:locations", ttl=600)
     def get_search_locations(self) -> List[str]:
         return self.repository.get_search_locations(self.db)
 
+    @cached(key_prefix="property:states", ttl=600)
     def get_states(self) -> List[str]:
         return self.repository.get_states(self.db)
 

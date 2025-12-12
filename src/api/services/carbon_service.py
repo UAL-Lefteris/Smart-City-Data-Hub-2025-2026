@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from pymongo.database import Database
 
 from src.api.repositories.carbon_repository import CarbonRepository
-
+from src.api.cache.cache_manager import cached
 
 class CarbonService:
 
@@ -47,7 +47,6 @@ class CarbonService:
             region_list = None
 
             if region_ids:
-                # Parse region IDs from comma-separated string
                 region_list = [int(rid.strip()) for rid in region_ids.split(',')]
                 data, total_count = self.repository.find_by_regions(
                     region_ids=region_list,
@@ -88,7 +87,6 @@ class CarbonService:
             postcode_list = None
 
             if postcodes:
-                # Parse and normalize postcodes to uppercase
                 postcode_list = [pc.strip().upper() for pc in postcodes.split(',')]
                 data, total_count = self.repository.find_by_postcodes(
                     postcodes=postcode_list,
@@ -96,7 +94,6 @@ class CarbonService:
                     limit=limit
                 )
             else:
-                # No filter, get all
                 data, total_count = self.repository.find_all(skip=skip, limit=limit)
 
             data = self._serialize_mongo_data(data)
@@ -227,6 +224,7 @@ class CarbonService:
                 detail=f"Error searching carbon data: {str(e)}"
             )
 
+    @cached(key_prefix="carbon:regions", ttl=600)
     def get_regions(self) -> List[int]:
         try:
             regions = self.repository.get_distinct_regions()
@@ -237,6 +235,7 @@ class CarbonService:
                 detail=f"Error retrieving regions: {str(e)}"
             )
 
+    @cached(key_prefix="carbon:postcodes", ttl=600)
     def get_postcodes(self) -> List[str]:
         try:
             postcodes = self.repository.get_distinct_postcodes()
