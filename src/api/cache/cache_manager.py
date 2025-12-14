@@ -8,7 +8,7 @@ from src.database.config import Config
 class CacheManager:
     def __init__(self):
         self.client = redis.from_url(
-            Config.REDIS_URL,
+            Config.CACHE_URL,
             decode_responses=True,
             socket_connect_timeout=5,
             socket_timeout=5

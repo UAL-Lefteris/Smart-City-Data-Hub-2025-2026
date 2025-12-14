@@ -390,7 +390,6 @@ class CarbonService:
                     detail=f"Carbon record with id {record_id} not found"
                 )
 
-            # Serialize and return
             if '_id' in updated:
                 updated['_id'] = str(updated['_id'])
 
